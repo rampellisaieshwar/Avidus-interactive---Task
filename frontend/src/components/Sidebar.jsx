@@ -29,16 +29,13 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-menu">
-        {/* User Specific Links */}
-        {user.role === 'User' && (
-          <NavLink 
-            to="/tasks" 
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <CheckSquare size={20} />
-            <span>My Tasks</span>
-          </NavLink>
-        )}
+        <NavLink 
+          to="/tasks" 
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+        >
+          <CheckSquare size={20} />
+          <span>My Tasks</span>
+        </NavLink>
 
         {/* Admin Specific Links */}
         {user.role === 'Admin' && (
