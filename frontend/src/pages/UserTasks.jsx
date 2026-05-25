@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const UserTasks = () => {
-  const { checkToken } = useAuth();
+  const { checkToken, user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,7 +24,27 @@ const UserTasks = () => {
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [users, setUsers] = useState([]);
+  const [assignedTo, setAssignedTo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const fetchUsers = async () => {
+    if (user && user.role === 'Admin') {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+          headers: {
+            'Authorization': `Bearer ${checkToken()}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setUsers(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      }
+    }
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -47,12 +67,14 @@ const UserTasks = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+    fetchUsers();
+  }, [user]);
 
   const openCreateModal = () => {
     setModalMode('create');
     setTitle('');
     setDescription('');
+    setAssignedTo(user ? user.id : '');
     setSelectedTask(null);
     setIsModalOpen(true);
   };
@@ -61,6 +83,7 @@ const UserTasks = () => {
     setModalMode('edit');
     setTitle(task.title);
     setDescription(task.description || '');
+    setAssignedTo(task.user ? (task.user._id || task.user) : '');
     setSelectedTask(task);
     setIsModalOpen(true);
   };
@@ -87,7 +110,8 @@ const UserTasks = () => {
         body: JSON.stringify({
           title,
           description,
-          status: modalMode === 'edit' ? selectedTask.status : 'Pending'
+          status: modalMode === 'edit' ? selectedTask.status : 'Pending',
+          user: user && user.role === 'Admin' ? assignedTo : undefined
         })
       });
 
@@ -201,6 +225,12 @@ const UserTasks = () => {
                 {task.description || 'No description provided.'}
               </p>
 
+              {task.user && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                  Assigned to: <strong style={{ color: 'var(--accent-primary)' }}>{task.user.username}</strong>
+                </div>
+              )}
+
               <div className="task-actions">
                 <button 
                   className="action-btn" 
@@ -266,6 +296,26 @@ const UserTasks = () => {
                   style={{ resize: 'vertical' }}
                 />
               </div>
+
+              {user && user.role === 'Admin' && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="task-assignee-select">Assign To</label>
+                  <select
+                    id="task-assignee-select"
+                    className="form-input"
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    disabled={submitting}
+                  >
+                    <option value="">Select user...</option>
+                    {users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.username} ({u.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="modal-actions">
                 <button 

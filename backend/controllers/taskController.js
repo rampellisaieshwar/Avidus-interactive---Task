@@ -26,16 +26,21 @@ const getTasks = async (req, res) => {
 // @access  Private
 const createTask = async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, user } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
 
+    let targetUserId = req.user._id;
+    if (req.user.role === 'Admin' && user) {
+      targetUserId = user;
+    }
+
     const task = await Task.create({
       title,
       description,
-      user: req.user._id,
+      user: targetUserId,
       status: 'Pending', // default status
     });
 
@@ -59,7 +64,7 @@ const createTask = async (req, res) => {
 // @access  Private
 const updateTask = async (req, res) => {
   try {
-    const { title, description, status } = req.body;
+    const { title, description, status, user } = req.body;
     const task = await Task.findById(req.params.id);
 
     if (!task) {
@@ -74,6 +79,7 @@ const updateTask = async (req, res) => {
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
     if (status !== undefined) task.status = status;
+    if (req.user.role === 'Admin' && user !== undefined) task.user = user;
 
     const updatedTask = await task.save();
 
